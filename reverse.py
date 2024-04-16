@@ -29,11 +29,13 @@ detected_skin_path = ""
 opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
 running = True
 is_australia_mode_active = False
+hotkeys_enabled = False
+display_count = 0
 
 def check_for_updates():
-    current_version = "0.9.0"  # Replace with your current app version
+    current_version = "0.9.2"  # Replace with your current app version
     version_url = "https://shikkesora.com/version.txt"
-    download_page_url = "https://shikkesora.com/downloads/"  # Replace with your actual download page URL
+    download_page_url = "https://shikkesora.com/downloads.html"  # Replace with your actual download page URL
 
     try:
         response = requests.get(version_url)
@@ -52,7 +54,32 @@ def check_for_updates():
 # Usage
 check_for_updates()      
 
+def display_hotkey_warning():
+    messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
+
+def activate_with_hotkeys():
+    global hotkeys_enabled
+    hotkeys_enabled = True
+    # Display a warning message when enabling hotkeys
+    display_hotkey_warning()
+
+def deactivate_with_hotkeys():
+    global hotkeys_enabled
+    hotkeys_enabled = False
+
+def handle_hotkey():
+    global hotkeys_enabled
+    if hotkeys_enabled:
+        # Do something when the hotkey is triggered
+        print("Hotkey triggered!")
+    else:
+        # Hotkeys are disabled, ignore the hotkey
+        pass
+
+import win32api
+
 def display_australia_mode_text():
+    global display_count
     text_window = tk.Toplevel()
     text_window.title("Australia Mode Activation")
 
@@ -62,10 +89,19 @@ def display_australia_mode_text():
     text_height = custom_font.metrics("linespace")
 
     window_width, window_height = max(800, text_width), max(200, text_height)
-    screen_width = text_window.winfo_screenwidth()
-    screen_height = text_window.winfo_screenheight()
+
+    # Get the primary monitor information
+    monitor_info = win32api.GetMonitorInfo(win32api.MonitorFromPoint((0,0)))
+    monitor_area = monitor_info['Monitor']
+    screen_width, screen_height = monitor_area[2] - monitor_area[0], monitor_area[3] - monitor_area[1]
+
     x = (screen_width - window_width) // 2
     y = (screen_height - window_height) // 2
+
+    # Adjust x and y to the coordinates of the primary monitor
+    x += monitor_area[0]
+    y += monitor_area[1]
+
     text_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
     text_window.overrideredirect(True)
@@ -75,7 +111,16 @@ def display_australia_mode_text():
     canvas.pack()
     canvas.create_text(window_width // 2, window_height // 2, text=text_content, font=custom_font, fill="#AFA1FF", angle=180)
     text_window.attributes("-topmost", True)
-    text_window.after(1000, text_window.destroy)
+
+    # Decide the display duration based on the number of times shown
+    if display_count < 2:
+        duration = 2500  # 4000 milliseconds = 4 seconds
+    else:
+        duration = 1000  # 1000 milliseconds = 1 second
+
+    text_window.after(duration, text_window.destroy)
+    display_count += 1
+
 
 def invert_mouse_y():
     screen_width, screen_height = pyautogui.size()
@@ -84,17 +129,35 @@ def invert_mouse_y():
         pyautogui.moveTo(x, screen_height - y, _pause=False)
         time.sleep(0.01)
 
+def find_osu_window():
+    osu_windows = [win for win in gw.getAllWindows() if "osu!" in win.title]
+    if osu_windows:
+        return osu_windows[0]  # Assuming the first matching window is the one we want
+    return None
+
 def set_display_orientation(rotation_angle):
+    osu_window = find_osu_window()
+    if not osu_window:
+        print("osu! window not found.")
+        return False
+
+    # Get the monitor where the osu! window is located
+    window_rect = osu_window._rect  # Get the bounding rectangle of the osu! window
+    window_center = ((window_rect.left + window_rect.right) // 2, (window_rect.top + window_rect.bottom) // 2)
+    
+    hmonitor = win32api.MonitorFromPoint(window_center, win32con.MONITOR_DEFAULTTONEAREST)
+    monitor_info = win32api.GetMonitorInfo(hmonitor)
+    device_name = monitor_info['Device']
+
     rotation_mapping = {0: win32con.DMDO_DEFAULT, 90: win32con.DMDO_270, 180: win32con.DMDO_180, 270: win32con.DMDO_90}
     rotation_val = rotation_mapping.get(rotation_angle, win32con.DMDO_DEFAULT)
-    
-    device = win32api.EnumDisplayDevices(None, 0)
-    dm = win32api.EnumDisplaySettings(device.DeviceName, win32con.ENUM_CURRENT_SETTINGS)
+
+    dm = win32api.EnumDisplaySettings(device_name, win32con.ENUM_CURRENT_SETTINGS)
     if (dm.DisplayOrientation + rotation_val) % 2 == 1:
         dm.PelsWidth, dm.PelsHeight = dm.PelsHeight, dm.PelsWidth
     dm.DisplayOrientation = rotation_val
-    
-    if win32api.ChangeDisplaySettingsEx(device.DeviceName, dm) != win32con.DISP_CHANGE_SUCCESSFUL:
+
+    if win32api.ChangeDisplaySettingsEx(device_name, dm, win32con.CDS_UPDATEREGISTRY) != win32con.DISP_CHANGE_SUCCESSFUL:
         print("Failed to change display orientation")
         return False
     return True
@@ -132,8 +195,11 @@ def run_batch_file_in_thread(directory):
 
             with open(first_run_flag_file, 'w') as f:
                 f.write('This marks the first run after conversion to portable mode.')
-
+            restart_opentabletdriver(directory)
             edit_and_restart(directory, first_time=True)
+            restart_opentabletdriver(directory)
+            time.sleep(1)
+            restart_opentabletdriver(directory)
         else:
             edit_and_restart(directory)
 
@@ -141,10 +207,10 @@ def run_batch_file_in_thread(directory):
         edit_settings_json(directory)
         restart_opentabletdriver(directory)
         if first_time:
-            time.sleep(2)  # Extra time for initial setup
+            time.sleep(1)  # Extra time for initial setup
             restart_opentabletdriver(directory)
-            messagebox.showinfo('Setup Complete', 'Setup complete with rotation applied. Please check if settings are correctly applied.')
             os.remove(os.path.join(directory, 'first_run.flag'))
+            restart_opentabletdriver(directory)
         else:
             messagebox.showinfo('Activated', 'Australia mode activated successfully!')
 
@@ -351,6 +417,19 @@ def select_skin():
 from pynput.keyboard import Key, Controller
 #idk why this is here but for some reason sometimes it breaks if its not there so just leave it be lmao
 
+def toggle_australia_mode():
+    global is_australia_mode_active
+    if is_australia_mode_active:
+        deactivate_australia_mode()
+    else:
+        activate_australia_mode()
+
+# def hotkeys_activation_changed():
+#     if hotkeys_activation_var.get():
+#         keyboard.add_hotkey('shift+alt+a', toggle_australia_mode, suppress=True)
+#     else:
+#         keyboard.remove_hotkey('shift+alt+a')
+
 def press_keys_with_keyboard_library():
     keyboard_controller = Controller()
     try:
@@ -367,7 +446,7 @@ def press_keys_with_keyboard_library():
                 if osu_window.isMinimized:
                     osu_window.restore()
                 osu_window.activate()
-                time.sleep(0.5)  
+                time.sleep(1)  
                 if osu_window.isActive:
                     break
 
@@ -396,10 +475,33 @@ def press_keys_with_keyboard_library():
         keyboard_controller.release(Key.alt)
         keyboard_controller.release(Key.ctrl)
 
+last_activation_time = 0
+
+def focus_osu_windows():
+    osu_window_prefix = "osu!"
+    osu_window = None
+    for attempt in range(10):
+            all_windows = gw.getAllWindows()
+            osu_windows = [window for window in all_windows if osu_window_prefix in window.title]
+
+            if osu_windows:
+                osu_window = osu_windows[0]
+                if osu_window.isMinimized:
+                    osu_window.restore()
+                osu_window.activate()
+                time.sleep(0.5)  
+                if osu_window.isActive:
+                    break
+
 def activate_australia_mode():
-    global is_australia_mode_active
+    global is_australia_mode_active, last_activation_time
     if is_australia_mode_active:
         return  #If already active, do nothing
+    
+    current_time = time.time()
+    if (current_time - last_activation_time) < 5:  # 5 seconds delay to prevent spam
+        return
+    last_activation_time = current_time
     is_australia_mode_active = True
     australia_mode_button.config(state='disabled')  # Disable the button to prevent reactivation
 
@@ -417,9 +519,12 @@ def activate_australia_mode():
         set_display_orientation(180)
         # Display big text indicating Australia Mode is activated
         # Press keys to trigger refresh in osu!
+        focus_osu_windows()
         press_keys_with_keyboard_library()
-        time.sleep(1)
+        time.sleep(0.5)
         display_australia_mode_text()
+        time.sleep(2)
+        focus_osu_windows()
         australia_mode_button.config(state='normal')  # Re-enable the button once process is complete
 
     directory = find_opentabletdriver()
@@ -437,7 +542,6 @@ def deactivate_australia_mode():
     global is_australia_mode_active
     if not is_australia_mode_active:
         return
-
     directory = find_opentabletdriver()
     if directory:
         set_display_orientation(0)
@@ -518,6 +622,14 @@ restore_button.config(command=lambda: rotate_images(os.path.join(osu_directory_e
 
 detected_label = ttk.Label(automatic_tab, text="")
 detected_label.pack(pady=20)
+
+# hotkeys_activation_var = tk.BooleanVar()
+# hotkeys_activation_checkbox = ttk.Checkbutton(manual_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+# hotkeys_activation_checkbox.pack(pady=8)
+
+# hotkeys_activation_var = tk.BooleanVar()
+# hotkeys_activation_checkbox = ttk.Checkbutton(automatic_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+# hotkeys_activation_checkbox.pack(pady=5)
 
 #mouse_mode_var = tk.BooleanVar()
 #mouse_mode_checkbox = ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
