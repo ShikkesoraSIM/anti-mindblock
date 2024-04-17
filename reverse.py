@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import tkinter as tk
 from tkinter import ttk, font as tkFont, filedialog, Listbox, messagebox
 import os
