@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import messagebox
 import webbrowser
 import win32api
 import win32con
@@ -28,13 +28,12 @@ def check_for_updates():
     try:
         latest_version = requests.get(version_url).text
         if latest_version > current_version:
-            root = tk.Tk()
-            root.withdraw()  # Hide the main window
             if tk.messagebox.askyesno("Update Available", "There is an update available. Would you like to download it?"):
                 webbrowser.open(download_page_url)
                 sys.exit()  # Exit the program
-            root.destroy()
+        root.deiconify()
     except requests.RequestException as e:
+        root.deiconify()
         print(f"Error checking for updates: {e}")
 
 def display_hotkey_warning():
@@ -538,6 +537,9 @@ def setup_hotkeys():
 
 
 if __name__ == "__main__":
+    root = tk.Tk()
+    root.withdraw()
+
     keyboard_controller = Controller()
     detected_skin_path = ""
     opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
@@ -546,14 +548,11 @@ if __name__ == "__main__":
     hotkeys_enabled = False
     display_count = 0
     
-    # Usage
-    check_for_updates()
-
     last_activation_time = 0
     hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
     hotkey_thread.start() 
 
-    root = tk.Tk()
+    
     root.title("Shikke's Skin Rotator")
     root.bind('<Shift-Alt-a>', lambda event: deactivate_australia_mode())
     icon_path = os.path.join(os.path.dirname(__file__), 'favicon.ico')
@@ -636,6 +635,8 @@ if __name__ == "__main__":
     refresh_skin_button.pack(side=tk.BOTTOM, pady=10)
     
     root.resizable(False, False)
+
+    check_for_updates()
 
     #yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
 
