@@ -404,9 +404,7 @@ def press_keys_with_keyboard_library():
                 osu_pid = proc.info['pid']
 
         def enumHandler(hwnd,_):
-            if osu_window_prefix not in win32gui.GetWindowText(hwnd):
-                print("Could not find osu! window")
-            else:
+            if osu_window_prefix in win32gui.GetWindowText(hwnd):
                 threadid, pid = win32process.GetWindowThreadProcessId(hwnd)
                 if pid == osu_pid:
                     for i in range(5):
