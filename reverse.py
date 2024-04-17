@@ -28,7 +28,7 @@ def check_for_updates():
     try:
         latest_version = requests.get(version_url).text
         if latest_version > current_version:
-            if tk.messagebox.askyesno("Update Available", "There is an update available. Would you like to download it?"):
+            if messagebox.askyesno("Update Available", "There is an update available. Would you like to download it?"):
                 webbrowser.open(download_page_url)
                 sys.exit()  # Exit the program
         root.deiconify()
@@ -37,7 +37,7 @@ def check_for_updates():
         print(f"Error checking for updates: {e}")
 
 def display_hotkey_warning():
-    tk.messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
+    messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
 
 def activate_with_hotkeys():
     global hotkeys_enabled
@@ -191,7 +191,7 @@ def run_batch_file_in_thread(directory):
             os.remove(os.path.join(directory, 'first_run.flag'))
             restart_opentabletdriver(directory)
         else:
-            tk.messagebox.showinfo('Activated', 'Australia mode activated successfully!')
+            messagebox.showinfo('Activated', 'Australia mode activated successfully!')
 
     thread = threading.Thread(target=target)
     thread.start()
@@ -501,7 +501,7 @@ def activate_australia_mode():
         thread.daemon = True
         thread.start()
     else:
-        tk.messagebox.showwarning('Warning', 'Cannot find OpenTabletDriver on this PC.')
+        messagebox.showwarning('Warning', 'Cannot find OpenTabletDriver on this PC.')
         australia_mode_button.config(state='normal')  # Re-enable button if operation fails
         is_australia_mode_active = False
 
@@ -524,7 +524,7 @@ def deactivate_australia_mode():
         is_australia_mode_active = False
         australia_mode_button.config(state='normal')
     else:
-        tk.messagebox.showwarning('Warning', 'Cannot find OpenTabletDriver on this PC.')
+        messagebox.showwarning('Warning', 'Cannot find OpenTabletDriver on this PC.')
 
 def setup_hotkeys():
     keyboard.add_hotkey('shift+alt+a', deactivate_australia_mode)
