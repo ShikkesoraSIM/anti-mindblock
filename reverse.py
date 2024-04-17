@@ -1,23 +1,23 @@
+from PIL import Image, UnidentifiedImageError
+from getpass import getuser
+from pynput.keyboard import Key, Controller
+import json
+import keyboard
+import os
+import psutil
+import pyautogui
+import pygetwindow as gw
+import requests
+import shutil
+import subprocess
+import sys
+import threading
+import time
 import tkinter as tk
 from tkinter import filedialog
-import os
-from PIL import Image, UnidentifiedImageError
-import pygetwindow as gw
-from pynput.keyboard import Key, Controller
-import time
-import psutil
-import getpass
-import json
-import subprocess
-import threading
+import webbrowser
 import win32api
 import win32con
-import keyboard
-import pyautogui
-import shutil
-import requests
-import sys
-import webbrowser
 
 
 def check_for_updates():
@@ -26,9 +26,7 @@ def check_for_updates():
     download_page_url = "https://shikkesora.com/downloads.html"  # Replace with your actual download page URL
 
     try:
-        response = requests.get(version_url)
-        latest_version = response.text.strip()
-
+        latest_version = requests.get(version_url).text
         if latest_version > current_version:
             root = tk.Tk()
             root.withdraw()  # Hide the main window
@@ -277,7 +275,7 @@ def automatic_detection():
     global detected_skin_path
     osu_path = find_osu_directory()
     if osu_path is not None:
-        username = getpass.getuser()
+        username = getuser()
         current_skin = read_user_skin_config(username)
         if current_skin:
             skins_path = os.path.join(osu_path, 'Skins', current_skin)
@@ -404,7 +402,6 @@ def toggle_australia_mode():
         activate_australia_mode()
 
 def press_keys_with_keyboard_library():
-    keyboard_controller = Controller()
     try:
         osu_window_prefix = "osu!"
         osu_window = None
