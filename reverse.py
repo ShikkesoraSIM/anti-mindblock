@@ -21,7 +21,7 @@ import webbrowser
 
 
 def check_for_updates():
-    current_version = "0.9.2"  # Replace with your current app version
+    current_version = "0.9.3"  # Replace with your current app version
     version_url = "https://shikkesora.com/version.txt"
     download_page_url = "https://shikkesora.com/downloads.html"  # Replace with your actual download page URL
 
