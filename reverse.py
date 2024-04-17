@@ -1,6 +1,8 @@
 from PIL import Image, UnidentifiedImageError
 from getpass import getuser
 from pynput.keyboard import Key, Controller
+from re import search
+from tkinter import messagebox
 import json
 import keyboard
 import os
@@ -14,7 +16,6 @@ import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox
 import webbrowser
 import win32api
 import win32con
@@ -245,46 +246,36 @@ def terminate_processes(process_names):
                 print(f"Error terminating process {proc.info['name']} (PID: {proc.info['pid']}): {e}")
                   
 def find_osu_directory():
-    for proc in psutil.process_iter(['pid', 'name']):
+    for proc in psutil.process_iter(['name']):
         if proc.info['name'] == 'osu!.exe':
             return os.path.dirname(proc.exe())
-    return None
 
-def read_user_skin_config(username):
-    osu_directory = find_osu_directory()
-    if osu_directory:
-        user_cfg_path = os.path.join(osu_directory, f'osu!.{username}.cfg')
-        if os.path.exists(user_cfg_path):
-            try:
-                with open(user_cfg_path, 'r', encoding='utf-8') as file:  # Added encoding here BECAUSE THE GUI THING SUCKS ASS
-                    for line in file:
-                        if line.strip().startswith('Skin'):
-                            current_skin = line.strip().split('=')[1].strip()
-                            return current_skin
-                print(f"Skin parameter not found in the configuration file: {user_cfg_path}")
-            except Exception as e:
-                print(f"Error reading config file: {e}")
-        else:
-            print(f"Config file {user_cfg_path} not found.")
+def read_user_skin_config(osu_directory, username):
+    user_cfg_path = os.path.join(osu_directory, f'osu!.{username}.cfg')
+    if not os.path.exists(user_cfg_path):
+        print(f"Config file {user_cfg_path} not found.")
     else:
-        print("osu! directory not found.")
-    return None
+        try:
+            with open(user_cfg_path, encoding="utf8") as f:
+                return [search(r"^Skin = (.*)$", i).group(0) for i in f.readlines() if search(r"^Skin = (.*)$", i)][0]
+        except Exception as e:
+            print(f"Error reading config file: {e}")
 
 def automatic_detection():
     global detected_skin_path
-    osu_path = find_osu_directory()
-    if osu_path is not None:
+    
+    osu_directory = find_osu_directory()
+    if not osu_directory:
+        print("osu! directory not found.")
+    else:
         username = getuser()
-        current_skin = read_user_skin_config(username)
-        if current_skin:
-            skins_path = os.path.join(osu_path, 'Skins', current_skin)
-            detected_skin_path = skins_path  #Store the full path of the detected skin
+        current_skin = read_user_skin_config(osu_directory, username)
+        if not current_skin:
+            print("Failed to read the current skin from the config.")
+        else:
+            detected_skin_path = os.path.join(osu_directory, 'Skins', current_skin) # Store the full path of the detected skin
             detected_label.config(text=f"{current_skin} Has been detected!")
             print(f"Automatically detected skin: {current_skin}")
-        else:
-            print("Failed to read the current skin from the config.")
-    else:
-        print("osu! directory not found.")
 
 def select_osu_directory():
     dir_path = tk.filedialog.askdirectory(title="Select osu! Directory")
@@ -318,7 +309,7 @@ def rotate_images(skin_path, restore=False):
     #Read skin.ini to dynamically adjust prefixes and paths if available
     skin_ini_path = os.path.join(skin_path, "skin.ini")
     if os.path.exists(skin_ini_path):
-        with open(skin_ini_path, 'r', encoding='utf-8') as file:
+        with open(skin_ini_path, 'r', encoding='utf8') as file:
             for line in file:
                 line = line.strip()
                 if line.startswith('HitCirclePrefix:'):
