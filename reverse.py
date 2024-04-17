@@ -395,9 +395,6 @@ def select_skin():
     detected_skin_path = os.path.join(osu_directory_entry.get(), "Skins", selected_skin)
     selected_skin_label.config(text=f"{selected_skin} skin is selected!")
     print(f"Selected skin path: {detected_skin_path}")
-     
-from pynput.keyboard import Key, Controller
-#idk why this is here but for some reason sometimes it breaks if its not there so just leave it be lmao
 
 def toggle_australia_mode():
     global is_australia_mode_active
