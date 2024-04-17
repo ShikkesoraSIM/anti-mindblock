@@ -634,6 +634,8 @@ if __name__ == "__main__":
 
     refresh_skin_button = tk.ttk.Button(manual_tab, text="Refresh Skin in-game!", command=press_keys_with_keyboard_library, width=button_width, style="Big.TButton")
     refresh_skin_button.pack(side=tk.BOTTOM, pady=10)
+    
+    root.resizable(False, False)
 
     #yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
 
