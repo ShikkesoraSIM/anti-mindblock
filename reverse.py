@@ -2,6 +2,7 @@ from PIL import Image, UnidentifiedImageError
 from getpass import getuser
 from pynput.keyboard import Key, Controller
 from re import search
+from tkinter import filedialog
 from tkinter import messagebox
 import json
 import keyboard
@@ -19,6 +20,8 @@ import tkinter as tk
 import webbrowser
 import win32api
 import win32con
+import win32gui
+import win32process
 
 
 def check_for_updates():
@@ -124,7 +127,7 @@ def set_display_orientation(rotation_angle):
     # Get the monitor where the osu! window is located
     window_rect = osu_window._rect  # Get the bounding rectangle of the osu! window
     window_center = ((window_rect.left + window_rect.right) // 2, (window_rect.top + window_rect.bottom) // 2)
-    
+
     hmonitor = win32api.MonitorFromPoint(window_center, win32con.MONITOR_DEFAULTTONEAREST)
     monitor_info = win32api.GetMonitorInfo(hmonitor)
     device_name = monitor_info['Device']
@@ -210,25 +213,25 @@ def edit_settings_json(directory):
             json.dump(settings, file, indent=4)
         print("Settings updated in:", directory)
     else:
-        print("Settings file not found in:", directory)         
+        print("Settings file not found in:", directory)
 
 def restart_opentabletdriver(directory):
     for proc in psutil.process_iter():
         if proc.name() in opentabletdriver_executables:
             proc.kill()
-    
+
     daemon_path = os.path.join(directory, 'OpenTabletDriver.Daemon.exe')
     subprocess.Popen([daemon_path], creationflags=subprocess.CREATE_NO_WINDOW)
-    
+
     time.sleep(0.2)
-    
+
     ux_path = os.path.join(directory, 'OpenTabletDriver.UX.Wpf.exe')
     subprocess.Popen([ux_path], creationflags=subprocess.CREATE_NO_WINDOW)
-    
+
     time.sleep(0.7)
-    
+
     try:
-        
+
         windows = gw.getWindowsWithTitle('OpenTabletDriver')
         for window in windows:
             if "OpenTabletDriver" in window.title:
@@ -244,7 +247,7 @@ def terminate_processes(process_names):
                 subprocess.run(['taskkill', '/PID', str(proc.info['pid']), '/F'], check=True)
             except subprocess.CalledProcessError as e:
                 print(f"Error terminating process {proc.info['name']} (PID: {proc.info['pid']}): {e}")
-                  
+
 def find_osu_directory():
     for proc in psutil.process_iter(['name']):
         if proc.info['name'] == 'osu!.exe':
@@ -263,7 +266,7 @@ def read_user_skin_config(osu_directory, username):
 
 def automatic_detection():
     global detected_skin_path
-    
+
     osu_directory = find_osu_directory()
     if not osu_directory:
         print("osu! directory not found.")
@@ -274,11 +277,11 @@ def automatic_detection():
             print("Failed to read the current skin from the config.")
         else:
             detected_skin_path = os.path.join(osu_directory, 'Skins', current_skin) # Store the full path of the detected skin
-            detected_label.config(text=f"{current_skin} Has been detected!")
+            detected_label.config(text=f'"{current_skin}" Has been detected!')
             print(f"Automatically detected skin: {current_skin}")
 
 def select_osu_directory():
-    dir_path = tk.filedialog.askdirectory(title="Select osu! Directory")
+    dir_path = filedialog.askdirectory(title="Select osu! Directory")
     if not dir_path:
         return
     osu_directory_entry.delete(0, tk.END)
@@ -289,7 +292,7 @@ def select_osu_directory():
 def update_skins_list(skins_path, current_skin):
     if os.path.exists(skins_path):
         skins = [name for name in os.listdir(skins_path) if os.path.isdir(os.path.join(skins_path, name))]
-        skins.sort() 
+        skins.sort()
         skins_list.delete(0, tk.END)
         for skin in skins:
             skins_list.insert(tk.END, skin)
@@ -381,7 +384,7 @@ def select_skin():
     global detected_skin_path  #En caso de tener que modificarlo luego
     selected_skin = skins_list.get(skins_list.curselection())
     detected_skin_path = os.path.join(osu_directory_entry.get(), "Skins", selected_skin)
-    selected_skin_label.config(text=f"{selected_skin} skin is selected!")
+    selected_skin_label.config(text=f'"{selected_skin}" skin is selected!')
     print(f"Selected skin path: {detected_skin_path}")
 
 def toggle_australia_mode():
@@ -394,46 +397,39 @@ def toggle_australia_mode():
 def press_keys_with_keyboard_library():
     try:
         osu_window_prefix = "osu!"
-        osu_window = None
 
         #Attempt to find the osu! window and bring it to focus multiple times if needed
-        for attempt in range(10):
-            all_windows = gw.getAllWindows()
-            osu_windows = [window for window in all_windows if osu_window_prefix in window.title]
+        for proc in psutil.process_iter(['pid','name']):
+            if proc.info['name'] == 'osu!.exe':
+                osu_pid = proc.info['pid']
 
-            if osu_windows:
-                osu_window = osu_windows[0]
-                if osu_window.isMinimized:
-                    osu_window.restore()
-                osu_window.activate()
-                time.sleep(1)  
-                if osu_window.isActive:
-                    break
+        def enumHandler(hwnd,_):
+            if osu_window_prefix not in win32gui.GetWindowText(hwnd):
+                print("Could not find osu! window")
+            else:
+                threadid, pid = win32process.GetWindowThreadProcessId(hwnd)
+                if pid == osu_pid:
+                    for i in range(5):
+                        if not win32gui.GetWindowText(win32gui.GetForegroundWindow()) == osu_window_prefix:
+                            win32gui.ShowWindow(hwnd,9)
+                            time.sleep(.1)
+                        else:
+                            time.sleep(.1)
+                            keyboard_controller.press(Key.ctrl)
+                            keyboard_controller.press(Key.alt)
+                            keyboard_controller.press(Key.shift)
+                            keyboard_controller.press('s')
+                            time.sleep(.1)
+                            keyboard_controller.release('s')
+                            keyboard_controller.release(Key.shift)
+                            keyboard_controller.release(Key.alt)
+                            keyboard_controller.release(Key.ctrl)
+                            break
 
-        if not osu_window:
-            print("osu! window not found. Make sure osu! is running.")
-            return
-
-        if not osu_window.isActive:
-            print("Could not focus the osu! window.")
-            return
-
-        #Simulate the key press combination
-        keyboard_controller.press(Key.ctrl)
-        keyboard_controller.press(Key.alt)
-        keyboard_controller.press(Key.shift)
-        keyboard_controller.press('s')
-        time.sleep(0.1)
+        win32gui.EnumWindows(enumHandler, None)
 
     except Exception as e:
         print(f"Error sending key combination: {e}")
-
-    finally:
-        # Release the keys
-        keyboard_controller.release('s')
-        keyboard_controller.release(Key.shift)
-        keyboard_controller.release(Key.alt)
-        keyboard_controller.release(Key.ctrl)
 
 def focus_osu_windows():
     osu_window_prefix = "osu!"
@@ -447,7 +443,7 @@ def focus_osu_windows():
                 if osu_window.isMinimized:
                     osu_window.restore()
                 osu_window.activate()
-                time.sleep(0.5)  
+                time.sleep(0.5)
                 if osu_window.isActive:
                     break
 
@@ -455,7 +451,7 @@ def activate_australia_mode():
     global is_australia_mode_active, last_activation_time
     if is_australia_mode_active:
         return  #If already active, do nothing
-    
+
     current_time = time.time()
     if (current_time - last_activation_time) < 5:  # 5 seconds delay to prevent spam
         return
@@ -508,7 +504,7 @@ def deactivate_australia_mode():
         restart_opentabletdriver(directory)
         keyboard_controller.release(Key.ctrl)
         if detected_skin_path:
-            rotate_images(detected_skin_path, restore=True) 
+            rotate_images(detected_skin_path, restore=True)
         keyboard_controller.release(Key.ctrl)
         press_keys_with_keyboard_library()
         keyboard_controller.release(Key.ctrl)
@@ -538,12 +534,12 @@ if __name__ == "__main__":
     is_australia_mode_active = False
     hotkeys_enabled = False
     display_count = 0
-    
+
     last_activation_time = 0
     hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
-    hotkey_thread.start() 
+    hotkey_thread.start()
 
-    
+
     root.title("Shikke's Skin Rotator")
     root.bind('<Shift-Alt-a>', lambda event: deactivate_australia_mode())
     icon_path = os.path.join(os.path.dirname(__file__), 'favicon.ico')
@@ -624,7 +620,7 @@ if __name__ == "__main__":
 
     refresh_skin_button = tk.ttk.Button(manual_tab, text="Refresh Skin in-game!", command=press_keys_with_keyboard_library, width=button_width, style="Big.TButton")
     refresh_skin_button.pack(side=tk.BOTTOM, pady=10)
-    
+
     root.resizable(False, False)
 
     check_for_updates()
