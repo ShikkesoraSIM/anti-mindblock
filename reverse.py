@@ -410,6 +410,7 @@ def press_keys_with_keyboard_library():
                     for i in range(5):
                         if not win32gui.GetWindowText(win32gui.GetForegroundWindow()) == osu_window_prefix:
                             win32gui.ShowWindow(hwnd,9)
+                            win32gui.SetForegroundWindow(hwnd)
                             time.sleep(.1)
                         else:
                             time.sleep(.1)
