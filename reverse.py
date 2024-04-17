@@ -19,13 +19,6 @@ import requests
 import sys
 import webbrowser
 
-keyboard_controller = Controller()
-detected_skin_path = ""
-opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
-running = True
-is_australia_mode_active = False
-hotkeys_enabled = False
-display_count = 0
 
 def check_for_updates():
     current_version = "0.9.2"  # Replace with your current app version
@@ -45,9 +38,6 @@ def check_for_updates():
             root.destroy()
     except requests.RequestException as e:
         print(f"Error checking for updates: {e}")
-
-# Usage
-check_for_updates()      
 
 def display_hotkey_warning():
     messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
@@ -113,7 +103,6 @@ def display_australia_mode_text():
 
     text_window.after(duration, text_window.destroy)
     display_count += 1
-
 
 def invert_mouse_y():
     screen_width, screen_height = pyautogui.size()
@@ -468,7 +457,7 @@ def press_keys_with_keyboard_library():
         keyboard_controller.release(Key.alt)
         keyboard_controller.release(Key.ctrl)
 
-last_activation_time = 0
+
 
 def focus_osu_windows():
     osu_window_prefix = "osu!"
@@ -555,91 +544,105 @@ def deactivate_australia_mode():
 def setup_hotkeys():
     keyboard.add_hotkey('shift+alt+a', deactivate_australia_mode)
 
-hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
-hotkey_thread.start() 
 
-root = tk.Tk()
-root.title("Shikke's Skin Rotator")
-root.bind('<Shift-Alt-a>', lambda event: deactivate_australia_mode())
-icon_path = os.path.join(os.path.dirname(__file__), 'favicon.ico')
-root.iconbitmap(icon_path)
+if __name__ == "__main__":
+    keyboard_controller = Controller()
+    detected_skin_path = ""
+    opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
+    running = True
+    is_australia_mode_active = False
+    hotkeys_enabled = False
+    display_count = 0
+    
+    # Usage
+    check_for_updates()
 
-theme_path = os.path.join(os.path.dirname(__file__), 'forest-dark.tcl')
-root.tk.call('source', theme_path)
-tab_control = ttk.Notebook(root)
-ttk.Style().theme_use('forest-dark')
+    last_activation_time = 0
+    hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
+    hotkey_thread.start() 
 
-button_font = ('Helvetica', 16)
-button_width = 20
+    root = tk.Tk()
+    root.title("Shikke's Skin Rotator")
+    root.bind('<Shift-Alt-a>', lambda event: deactivate_australia_mode())
+    icon_path = os.path.join(os.path.dirname(__file__), 'favicon.ico')
+    root.iconbitmap(icon_path)
 
-manual_tab = ttk.Frame(tab_control)
-tab_control.add(manual_tab, text='Manual')
+    theme_path = os.path.join(os.path.dirname(__file__), 'forest-dark.tcl')
+    root.tk.call('source', theme_path)
+    tab_control = ttk.Notebook(root)
+    ttk.Style().theme_use('forest-dark')
 
-automatic_tab = ttk.Frame(tab_control)
-tab_control.add(automatic_tab, text='Automatic')
+    button_font = ('Helvetica', 16)
+    button_width = 20
 
-tab_control.pack(expand=1, fill='both')
+    manual_tab = ttk.Frame(tab_control)
+    tab_control.add(manual_tab, text='Manual')
 
-main_frame_manual = ttk.Frame(manual_tab)
-main_frame_manual.pack(padx=10, pady=10)
+    automatic_tab = ttk.Frame(tab_control)
+    tab_control.add(automatic_tab, text='Automatic')
 
-osu_directory_entry = ttk.Entry(main_frame_manual, width=50)
-osu_directory_entry.pack(side=tk.LEFT, padx=(0, 10))
+    tab_control.pack(expand=1, fill='both')
 
-select_directory_button = ttk.Button(main_frame_manual, text="Select osu! Directory", command=select_osu_directory)
-select_directory_button.pack(side=tk.LEFT)
+    main_frame_manual = ttk.Frame(manual_tab)
+    main_frame_manual.pack(padx=10, pady=10)
 
-skins_frame_manual = ttk.Frame(manual_tab)
-skins_frame_manual.pack(padx=10, pady=(5, 10))
+    osu_directory_entry = ttk.Entry(main_frame_manual, width=50)
+    osu_directory_entry.pack(side=tk.LEFT, padx=(0, 10))
 
-skins_list = Listbox(skins_frame_manual, width=60, height=10)
-skins_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    select_directory_button = ttk.Button(main_frame_manual, text="Select osu! Directory", command=select_osu_directory)
+    select_directory_button.pack(side=tk.LEFT)
 
-selected_skin_label = ttk.Label(manual_tab, text="No skin is selected!")
-selected_skin_label.pack(pady=5)
+    skins_frame_manual = ttk.Frame(manual_tab)
+    skins_frame_manual.pack(padx=10, pady=(5, 10))
 
-select_skin_button = ttk.Button(manual_tab, text="Select", command=select_skin, style="Accent.TButton")
-select_skin_button.pack(pady=5)
+    skins_list = Listbox(skins_frame_manual, width=60, height=10)
+    skins_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-rotate_button = ttk.Button(manual_tab, text="Rotate Numbers", command=lambda: rotate_images(restore=False),style="Accent.TButton")
-rotate_button.pack(side=tk.LEFT, padx=(10, 5), pady=7)
+    selected_skin_label = ttk.Label(manual_tab, text="No skin is selected!")
+    selected_skin_label.pack(pady=5)
 
-restore_button = ttk.Button(manual_tab, text="Restore Numbers", command=lambda: rotate_images(restore=True),style="Accent.TButton")
-restore_button.pack(side=tk.RIGHT, padx=(5, 10), pady=7)
+    select_skin_button = ttk.Button(manual_tab, text="Select", command=select_skin, style="Accent.TButton")
+    select_skin_button.pack(pady=5)
 
-auto_detect_button = ttk.Button(automatic_tab, text="Auto-Detect osu! Skin", command=automatic_detection, width=button_width, style="Big.TButton")
-auto_detect_button.pack(pady=(60, 10))
+    rotate_button = ttk.Button(manual_tab, text="Rotate Numbers", command=lambda: rotate_images(restore=False),style="Accent.TButton")
+    rotate_button.pack(side=tk.LEFT, padx=(10, 5), pady=7)
 
-rotate_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=False))
-restore_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=True))
+    restore_button = ttk.Button(manual_tab, text="Restore Numbers", command=lambda: rotate_images(restore=True),style="Accent.TButton")
+    restore_button.pack(side=tk.RIGHT, padx=(5, 10), pady=7)
 
-detected_label = ttk.Label(automatic_tab, text="")
-detected_label.pack(pady=20)
+    auto_detect_button = ttk.Button(automatic_tab, text="Auto-Detect osu! Skin", command=automatic_detection, width=button_width, style="Big.TButton")
+    auto_detect_button.pack(pady=(60, 10))
 
-# hotkeys_activation_var = tk.BooleanVar()
-# hotkeys_activation_checkbox = ttk.Checkbutton(manual_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
-# hotkeys_activation_checkbox.pack(pady=8)
+    rotate_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=False))
+    restore_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=True))
 
-# hotkeys_activation_var = tk.BooleanVar()
-# hotkeys_activation_checkbox = ttk.Checkbutton(automatic_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
-# hotkeys_activation_checkbox.pack(pady=5)
+    detected_label = ttk.Label(automatic_tab, text="")
+    detected_label.pack(pady=20)
 
-#mouse_mode_var = tk.BooleanVar()
-#mouse_mode_checkbox = ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
-#mouse_mode_checkbox.pack()
+    # hotkeys_activation_var = tk.BooleanVar()
+    # hotkeys_activation_checkbox = ttk.Checkbutton(manual_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+    # hotkeys_activation_checkbox.pack(pady=8)
 
-australia_mode_button = ttk.Button(manual_tab, text="Australia Mode", command=activate_australia_mode, width=button_width)
-australia_mode_button.pack(pady=(110, 20))
+    # hotkeys_activation_var = tk.BooleanVar()
+    # hotkeys_activation_checkbox = ttk.Checkbutton(automatic_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+    # hotkeys_activation_checkbox.pack(pady=5)
 
-australia_mode_button = ttk.Button(automatic_tab, text="Australia Mode", command=activate_australia_mode, width=button_width, style="Big.TButton")
-australia_mode_button.pack(pady=(110, 20))
+    #mouse_mode_var = tk.BooleanVar()
+    #mouse_mode_checkbox = ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
+    #mouse_mode_checkbox.pack()
 
-style = ttk.Style()
-style.configure('Big.TButton', font=button_font)
+    australia_mode_button = ttk.Button(manual_tab, text="Australia Mode", command=activate_australia_mode, width=button_width)
+    australia_mode_button.pack(pady=(110, 20))
 
-refresh_skin_button = ttk.Button(manual_tab, text="Refresh Skin in-game!", command=press_keys_with_keyboard_library, width=button_width, style="Big.TButton")
-refresh_skin_button.pack(side=tk.BOTTOM, pady=10)
+    australia_mode_button = ttk.Button(automatic_tab, text="Australia Mode", command=activate_australia_mode, width=button_width, style="Big.TButton")
+    australia_mode_button.pack(pady=(110, 20))
 
-#yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
+    style = ttk.Style()
+    style.configure('Big.TButton', font=button_font)
 
-root.mainloop()
+    refresh_skin_button = ttk.Button(manual_tab, text="Refresh Skin in-game!", command=press_keys_with_keyboard_library, width=button_width, style="Big.TButton")
+    refresh_skin_button.pack(side=tk.BOTTOM, pady=10)
+
+    #yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
+
+    root.mainloop()
