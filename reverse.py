@@ -12,13 +12,10 @@ import subprocess
 import threading
 import win32api
 import win32con
-import win32gui
-import win32process
 import keyboard
 import pyautogui
 import shutil
 import requests
-import zipfile
 import sys
 import webbrowser
 
@@ -73,8 +70,6 @@ def handle_hotkey():
     else:
         # Hotkeys are disabled, ignore the hotkey
         pass
-
-import win32api
 
 def display_australia_mode_text():
     global display_count
