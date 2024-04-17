@@ -403,12 +403,6 @@ def toggle_australia_mode():
     else:
         activate_australia_mode()
 
-# def hotkeys_activation_changed():
-#     if hotkeys_activation_var.get():
-#         keyboard.add_hotkey('shift+alt+a', toggle_australia_mode, suppress=True)
-#     else:
-#         keyboard.remove_hotkey('shift+alt+a')
-
 def press_keys_with_keyboard_library():
     keyboard_controller = Controller()
     try:
@@ -453,8 +447,6 @@ def press_keys_with_keyboard_library():
         keyboard_controller.release(Key.shift)
         keyboard_controller.release(Key.alt)
         keyboard_controller.release(Key.ctrl)
-
-
 
 def focus_osu_windows():
     osu_window_prefix = "osu!"
@@ -540,6 +532,12 @@ def deactivate_australia_mode():
 
 def setup_hotkeys():
     keyboard.add_hotkey('shift+alt+a', deactivate_australia_mode)
+
+# def hotkeys_activation_changed():
+#     if hotkeys_activation_var.get():
+#         keyboard.add_hotkey('shift+alt+a', toggle_australia_mode, suppress=True)
+#     else:
+#         keyboard.remove_hotkey('shift+alt+a')
 
 
 if __name__ == "__main__":
