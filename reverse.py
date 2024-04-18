@@ -497,6 +497,7 @@ def press_keys_with_keyboard_library():
         for proc in psutil.process_iter(["pid", "name"]):
             if proc.info["name"] == "osu!.exe":
                 osu_pid = proc.info["pid"]
+                break
 
         def enumHandler(hwnd, _):
             if osu_window_prefix in win32gui.GetWindowText(hwnd):
@@ -531,21 +532,30 @@ def press_keys_with_keyboard_library():
 
 def focus_osu_windows():
     osu_window_prefix = "osu!"
-    osu_window = None
-    for attempt in range(10):
-        all_windows = gw.getAllWindows()
-        osu_windows = [
-            window for window in all_windows if osu_window_prefix in window.title
-        ]
 
-        if osu_windows:
-            osu_window = osu_windows[0]
-            if osu_window.isMinimized:
-                osu_window.restore()
-            osu_window.activate()
-            time.sleep(0.5)
-            if osu_window.isActive:
-                break
+    # Attempt to find the osu! window and bring it to focus multiple times if needed
+    for proc in psutil.process_iter(["pid", "name"]):
+        if proc.info["name"] == "osu!.exe":
+            osu_pid = proc.info["pid"]
+            break
+
+    def enumHandler(hwnd, _):
+        if osu_window_prefix in win32gui.GetWindowText(hwnd):
+            threadid, pid = win32process.GetWindowThreadProcessId(hwnd)
+            if pid == osu_pid:
+                for i in range(5):
+                    if (
+                        not win32gui.GetWindowText(win32gui.GetForegroundWindow())
+                        == osu_window_prefix
+                    ):
+                        win32gui.ShowWindow(hwnd, 9)
+                        win32gui.SetForegroundWindow(hwnd)
+                        time.sleep(0.1)
+                    else:
+                        time.sleep(0.1)
+                        break
+
+    win32gui.EnumWindows(enumHandler, None)
 
 
 def activate_australia_mode():
@@ -576,7 +586,6 @@ def activate_australia_mode():
         set_display_orientation(180)
         # Display big text indicating Australia Mode is activated
         # Press keys to trigger refresh in osu!
-        focus_osu_windows()
         press_keys_with_keyboard_library()
         time.sleep(0.5)
         display_australia_mode_text()
