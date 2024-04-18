@@ -1,3 +1,4 @@
+from configparser import ConfigParser
 from PIL import Image, UnidentifiedImageError
 from getpass import getuser
 from pynput.keyboard import Key, Controller
@@ -17,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import datetime
 import tkinter as tk
 import webbrowser
 import win32api
@@ -31,6 +33,7 @@ def check_update(force=False):
 
     try:
         latest_version = get(VERSION_URL).text
+        last_checked = int(datetime.datetime.utcnow().timestamp())
         if latest_version <= VERSION:
             if force:
                 messagebox.showinfo("", "You have the latest update")
@@ -40,8 +43,12 @@ def check_update(force=False):
                 "There is an update available. Would you like to download it?",
             ):
                 webbrowser.open(DOWNLOAD_PAGE_URL)
-                sys.exit()  # Exit the program
+                # sys.exit()  # Exit the program
         root.deiconify()
+        config.set('Settings', 'LastUpdate', f'{last_checked}')
+        with open("./config.ini", "w", encoding="utf8") as f:
+            config.write(f)
+        return last_checked
     except exceptions.RequestException as e:
         root.deiconify()
         print(f"Error checking for updates: {e}")
@@ -793,17 +800,43 @@ def main():
 
     root.resizable(False, False)
 
-    check_update(force=False)
+    global config
+    if not (os.path.exists("./config.ini")):
+        last_checked = "0"
+        config = ConfigParser(allow_no_value=True, interpolation=None)
+        config.optionxform = str
+
+        config.add_section('Settings')
+        config.set('Settings', 'LastUpdate', f'{last_checked}')
+        config.set('Settings', 'UpdateCheckInterval', '1')
+
+        with open("./config.ini", "w", encoding="utf8") as f:
+            config.write(f)
+            
+        check_update(force=False)
+    else:
+        config = ConfigParser(allow_no_value=True, interpolation=None)
+        config.optionxform = str
+        config.read("./config.ini")
+        
+        config_last_update = int(config['Settings']['LastUpdate'])
+        config_check_interval = int(config['Settings']['UpdateCheckInterval'])
+        last_checked = int(datetime.datetime.utcnow().timestamp())
+
+
+        if (last_checked - config_last_update > config_check_interval * 86400):  
+            check_update(force=False)
+            with open("./config.ini", "w", encoding="utf8") as f:
+                config.write(f)
+
 
     # yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
-
+    root.deiconify()
     root.mainloop()
 
 
 if __name__ == "__main__":
     VERSION = "0.9.4 beta"  # Replace with your current app version
-
-    main()
 
     keyboard_controller = Controller()
     detected_skin_path = ""
@@ -811,6 +844,7 @@ if __name__ == "__main__":
         "OpenTabletDriver.Daemon.exe",
         "OpenTabletDriver.UX.Wpf.exe",
     ]
+
     running = True
     is_australia_mode_active = False
     hotkeys_enabled = False
@@ -819,3 +853,5 @@ if __name__ == "__main__":
     last_activation_time = 0
     hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
     hotkey_thread.start()
+
+    main()
