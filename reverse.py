@@ -10,7 +10,8 @@ import os
 import psutil
 import pyautogui
 import pygetwindow as gw
-import requests
+from requests import get
+from requests import exceptions
 import shutil
 import subprocess
 import sys
@@ -24,43 +25,45 @@ import win32gui
 import win32process
 
 
-def check_for_updates():
-    current_version = "0.9.3"  # Replace with your current app version
-    version_url = "https://shikkesora.com/version.txt"
-    download_page_url = "https://shikkesora.com/downloads.html"  # Replace with your actual download page URL
+def check_update(force=False):
+    VERSION_URL = "https://shikkesora.com/version.txt"
+    DOWNLOAD_PAGE_URL = "https://shikkesora.com/downloads.html"
 
     try:
-        latest_version = requests.get(version_url).text
-        if latest_version > current_version:
+        latest_version = get(VERSION_URL).text
+        if latest_version <= VERSION:
+            if force:
+                messagebox.showinfo("","You have the latest update")
+        else:
             if messagebox.askyesno("Update Available", "There is an update available. Would you like to download it?"):
-                webbrowser.open(download_page_url)
+                webbrowser.open(DOWNLOAD_PAGE_URL)
                 sys.exit()  # Exit the program
         root.deiconify()
-    except requests.RequestException as e:
+    except exceptions.RequestException as e:
         root.deiconify()
         print(f"Error checking for updates: {e}")
 
-def display_hotkey_warning():
-    messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
+# def display_hotkey_warning():
+#     messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
 
-def activate_with_hotkeys():
-    global hotkeys_enabled
-    hotkeys_enabled = True
-    # Display a warning message when enabling hotkeys
-    display_hotkey_warning()
+# def activate_with_hotkeys():
+#     global hotkeys_enabled
+#     hotkeys_enabled = True
+#     # Display a warning message when enabling hotkeys
+#     display_hotkey_warning()
 
-def deactivate_with_hotkeys():
-    global hotkeys_enabled
-    hotkeys_enabled = False
+# def deactivate_with_hotkeys():
+#     global hotkeys_enabled
+#     hotkeys_enabled = False
 
-def handle_hotkey():
-    global hotkeys_enabled
-    if hotkeys_enabled:
-        # Do something when the hotkey is triggered
-        print("Hotkey triggered!")
-    else:
-        # Hotkeys are disabled, ignore the hotkey
-        pass
+# def handle_hotkey():
+#     global hotkeys_enabled
+#     if hotkeys_enabled:
+#         # Do something when the hotkey is triggered
+#         print("Hotkey triggered!")
+#     else:
+#         # Hotkeys are disabled, ignore the hotkey
+#         pass
 
 def display_australia_mode_text():
     global display_count
@@ -522,24 +525,18 @@ def setup_hotkeys():
 #         keyboard.remove_hotkey('shift+alt+a')
 
 
-if __name__ == "__main__":
+def main():
+    global root
     root = tk.Tk()
     root.withdraw()
 
-    keyboard_controller = Controller()
-    detected_skin_path = ""
-    opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
-    running = True
-    is_australia_mode_active = False
-    hotkeys_enabled = False
-    display_count = 0
+    menubutton = tk.Menubutton(root, text="Menu", padx=20)
+    menubutton.menu = tk.Menu(menubutton, tearoff = 0 )
+    menubutton.menu.add_command(label= "Check for updates", command=lambda:check_update(force=True))
+    menubutton["menu"] = menubutton.menu
+    menubutton.pack()
 
-    last_activation_time = 0
-    hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
-    hotkey_thread.start()
-
-
-    root.title("Shikke's Skin Rotator")
+    root.title(f"Shikke's Skin Rotator {VERSION}")
     root.bind('<Shift-Alt-a>', lambda event: deactivate_australia_mode())
     icon_path = os.path.join(os.path.dirname(__file__), 'favicon.ico')
     root.iconbitmap(icon_path)
@@ -563,6 +560,7 @@ if __name__ == "__main__":
     main_frame_manual = tk.ttk.Frame(manual_tab)
     main_frame_manual.pack(padx=10, pady=10)
 
+    global osu_directory_entry
     osu_directory_entry = tk.ttk.Entry(main_frame_manual, width=50)
     osu_directory_entry.pack(side=tk.LEFT, padx=(0, 10))
 
@@ -572,9 +570,11 @@ if __name__ == "__main__":
     skins_frame_manual = tk.ttk.Frame(manual_tab)
     skins_frame_manual.pack(padx=10, pady=(5, 10))
 
+    global skins_list
     skins_list = tk.Listbox(skins_frame_manual, width=60, height=10)
     skins_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+    global selected_skin_label
     selected_skin_label = tk.ttk.Label(manual_tab, text="No skin is selected!")
     selected_skin_label.pack(pady=5)
 
@@ -592,7 +592,7 @@ if __name__ == "__main__":
 
     rotate_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=False))
     restore_button.config(command=lambda: rotate_images(os.path.join(osu_directory_entry.get(), "Skins", skins_list.get(tk.ANCHOR)), restore=True))
-
+    global detected_label
     detected_label = tk.ttk.Label(automatic_tab, text="")
     detected_label.pack(pady=20)
 
@@ -608,6 +608,7 @@ if __name__ == "__main__":
     #mouse_mode_checkbox = tk.ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
     #mouse_mode_checkbox.pack()
 
+    global australia_mode_button
     australia_mode_button = tk.ttk.Button(manual_tab, text="Australia Mode", command=activate_australia_mode, width=button_width)
     australia_mode_button.pack(pady=(110, 20))
 
@@ -622,8 +623,28 @@ if __name__ == "__main__":
 
     root.resizable(False, False)
 
-    check_for_updates()
+    check_update(force=False)
 
     #yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
 
     root.mainloop()
+
+
+if __name__ == "__main__":
+    VERSION = "0.9.4 beta"  # Replace with your current app version
+
+    main()
+
+    keyboard_controller = Controller()
+    detected_skin_path = ""
+    opentabletdriver_executables = ['OpenTabletDriver.Daemon.exe', 'OpenTabletDriver.UX.Wpf.exe']
+    running = True
+    is_australia_mode_active = False
+    hotkeys_enabled = False
+    display_count = 0
+
+    last_activation_time = 0
+    hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
+    hotkey_thread.start()
+
+
