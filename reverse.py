@@ -1,80 +1,88 @@
-from configparser import ConfigParser
 from PIL import Image, UnidentifiedImageError
+from configparser import ConfigParser
 from getpass import getuser
 from pynput.keyboard import Key, Controller
 from re import search
-from tkinter import filedialog
-from tkinter import messagebox
+from requests import exceptions
+from requests import get
+from tkinter import ttk, font as tkFont, filedialog, Listbox, messagebox
+import datetime
 import json
 import keyboard
 import os
 import psutil
 import pyautogui
 import pygetwindow as gw
-from requests import get
-from requests import exceptions
 import shutil
 import subprocess
 import sys
 import threading
 import time
-import datetime
 import tkinter as tk
 import webbrowser
 import win32api
 import win32con
 import win32gui
 import win32process
+import zipfile
 
 
-def check_update(force=False):
-    VERSION_URL = "https://shikkesora.com/version.txt"
-    DOWNLOAD_PAGE_URL = "https://shikkesora.com/downloads.html"
+def check_for_updates(manual=False):
+    version_url = "https://shikkesora.com/version.txt"
+    download_page_url = "https://shikkesora.com/downloads.html"  # Replace with your actual download page URL
 
     try:
-        latest_version = get(VERSION_URL).text
+        latest_version = get(version_url).text
         last_checked = int(datetime.datetime.utcnow().timestamp())
         if latest_version <= VERSION:
-            if force:
+            if manual:
                 messagebox.showinfo("", "You have the latest update")
         else:
             if messagebox.askyesno(
                 "Update Available",
                 "There is an update available. Would you like to download it?",
             ):
-                webbrowser.open(DOWNLOAD_PAGE_URL)
+                webbrowser.open(download_page_url)
                 # sys.exit()  # Exit the program
         root.deiconify()
-        config.set('Settings', 'LastUpdate', f'{last_checked}')
+
+        config.set("Settings", "LastUpdate", f"{last_checked}")
         with open("./config.ini", "w", encoding="utf8") as f:
             config.write(f)
+
         return last_checked
     except exceptions.RequestException as e:
         root.deiconify()
         print(f"Error checking for updates: {e}")
 
 
-# def display_hotkey_warning():
-#     messagebox.showwarning("Warning", "You're enabling activation with hotkeys. Remember to have the correct skin selected")
+def display_hotkey_warning():
+    messagebox.showwarning(
+        "Warning",
+        "You're enabling activation with hotkeys. Remember to have the correct skin selected",
+    )
 
-# def activate_with_hotkeys():
-#     global hotkeys_enabled
-#     hotkeys_enabled = True
-#     # Display a warning message when enabling hotkeys
-#     display_hotkey_warning()
 
-# def deactivate_with_hotkeys():
-#     global hotkeys_enabled
-#     hotkeys_enabled = False
+def activate_with_hotkeys():
+    global hotkeys_enabled
+    hotkeys_enabled = True
+    # Display a warning message when enabling hotkeys
+    display_hotkey_warning()
 
-# def handle_hotkey():
-#     global hotkeys_enabled
-#     if hotkeys_enabled:
-#         # Do something when the hotkey is triggered
-#         print("Hotkey triggered!")
-#     else:
-#         # Hotkeys are disabled, ignore the hotkey
-#         pass
+
+def deactivate_with_hotkeys():
+    global hotkeys_enabled
+    hotkeys_enabled = False
+
+
+def handle_hotkey():
+    global hotkeys_enabled
+    if hotkeys_enabled:
+        # Do something when the hotkey is triggered
+        print("Hotkey triggered!")
+    else:
+        # Hotkeys are disabled, ignore the hotkey
+        pass
 
 
 def display_australia_mode_text():
@@ -82,7 +90,7 @@ def display_australia_mode_text():
     text_window = tk.Toplevel()
     text_window.title("Australia Mode Activation")
 
-    custom_font = tk.font.Font(family="Century Gothic", size=60)
+    custom_font = tkFont.Font(family="Century Gothic", size=60)
     text_content = "SHIFT+ALT+A To Disable"
     text_width = custom_font.measure(text_content)
     text_height = custom_font.metrics("linespace")
@@ -327,11 +335,12 @@ def read_user_skin_config(osu_directory, username):
     else:
         try:
             with open(user_cfg_path, encoding="utf8") as f:
-                return [
+                current_skin = [
                     search(r"^Skin = (.*)$", i).group(0)
                     for i in f.readlines()
                     if search(r"^Skin = (.*)$", i)
                 ][0]
+            return current_skin
         except Exception as e:
             print(f"Error reading config file: {e}")
 
@@ -496,6 +505,13 @@ def toggle_australia_mode():
         activate_australia_mode()
 
 
+# def hotkeys_activation_changed():
+#     if hotkeys_activation_var.get():
+#         keyboard.add_hotkey('shift+alt+a', toggle_australia_mode, suppress=True)
+#     else:
+#         keyboard.remove_hotkey('shift+alt+a')
+
+
 def press_keys_with_keyboard_library():
     try:
         osu_window_prefix = "osu!"
@@ -646,22 +662,31 @@ def setup_hotkeys():
     keyboard.add_hotkey("shift+alt+a", deactivate_australia_mode)
 
 
-# def hotkeys_activation_changed():
-#     if hotkeys_activation_var.get():
-#         keyboard.add_hotkey('shift+alt+a', toggle_australia_mode, suppress=True)
-#     else:
-#         keyboard.remove_hotkey('shift+alt+a')
+if __name__ == "__main__":
+    VERSION = "0.9.4 beta"  # Replace with your current app version
 
+    keyboard_controller = Controller()
+    detected_skin_path = ""
+    opentabletdriver_executables = [
+        "OpenTabletDriver.Daemon.exe",
+        "OpenTabletDriver.UX.Wpf.exe",
+    ]
+    running = True
+    is_australia_mode_active = False
+    hotkeys_enabled = False
+    display_count = 0
+    hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
+    hotkey_thread.start()
 
-def main():
-    global root
+    last_activation_time = 0
+
     root = tk.Tk()
     root.withdraw()
 
     menubutton = tk.Menubutton(root, text="Menu", padx=20)
     menubutton.menu = tk.Menu(menubutton, tearoff=0)
     menubutton.menu.add_command(
-        label="Check for updates", command=lambda: check_update(force=True)
+        label="Check for updates", command=lambda: check_for_updates(manual=True)
     )
     menubutton["menu"] = menubutton.menu
     menubutton.pack()
@@ -673,49 +698,46 @@ def main():
 
     theme_path = os.path.join(os.path.dirname(__file__), "forest-dark.tcl")
     root.tk.call("source", theme_path)
-    tab_control = tk.ttk.Notebook(root)
-    tk.ttk.Style().theme_use("forest-dark")
+    tab_control = ttk.Notebook(root)
+    ttk.Style().theme_use("forest-dark")
 
     button_font = ("Helvetica", 16)
     button_width = 20
 
-    manual_tab = tk.ttk.Frame(tab_control)
+    manual_tab = ttk.Frame(tab_control)
     tab_control.add(manual_tab, text="Manual")
 
-    automatic_tab = tk.ttk.Frame(tab_control)
+    automatic_tab = ttk.Frame(tab_control)
     tab_control.add(automatic_tab, text="Automatic")
 
     tab_control.pack(expand=1, fill="both")
 
-    main_frame_manual = tk.ttk.Frame(manual_tab)
+    main_frame_manual = ttk.Frame(manual_tab)
     main_frame_manual.pack(padx=10, pady=10)
 
-    global osu_directory_entry
-    osu_directory_entry = tk.ttk.Entry(main_frame_manual, width=50)
+    osu_directory_entry = ttk.Entry(main_frame_manual, width=50)
     osu_directory_entry.pack(side=tk.LEFT, padx=(0, 10))
 
-    select_directory_button = tk.ttk.Button(
+    select_directory_button = ttk.Button(
         main_frame_manual, text="Select osu! Directory", command=select_osu_directory
     )
     select_directory_button.pack(side=tk.LEFT)
 
-    skins_frame_manual = tk.ttk.Frame(manual_tab)
+    skins_frame_manual = ttk.Frame(manual_tab)
     skins_frame_manual.pack(padx=10, pady=(5, 10))
 
-    global skins_list
-    skins_list = tk.Listbox(skins_frame_manual, width=60, height=10)
+    skins_list = Listbox(skins_frame_manual, width=60, height=10)
     skins_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    global selected_skin_label
-    selected_skin_label = tk.ttk.Label(manual_tab, text="No skin is selected!")
+    selected_skin_label = ttk.Label(manual_tab, text="No skin is selected!")
     selected_skin_label.pack(pady=5)
 
-    select_skin_button = tk.ttk.Button(
+    select_skin_button = ttk.Button(
         manual_tab, text="Select", command=select_skin, style="Accent.TButton"
     )
     select_skin_button.pack(pady=5)
 
-    rotate_button = tk.ttk.Button(
+    rotate_button = ttk.Button(
         manual_tab,
         text="Rotate Numbers",
         command=lambda: rotate_images(restore=False),
@@ -723,7 +745,7 @@ def main():
     )
     rotate_button.pack(side=tk.LEFT, padx=(10, 5), pady=7)
 
-    restore_button = tk.ttk.Button(
+    restore_button = ttk.Button(
         manual_tab,
         text="Restore Numbers",
         command=lambda: rotate_images(restore=True),
@@ -731,7 +753,7 @@ def main():
     )
     restore_button.pack(side=tk.RIGHT, padx=(5, 10), pady=7)
 
-    auto_detect_button = tk.ttk.Button(
+    auto_detect_button = ttk.Button(
         automatic_tab,
         text="Auto-Detect osu! Skin",
         command=automatic_detection,
@@ -752,24 +774,23 @@ def main():
             restore=True,
         )
     )
-    global detected_label
-    detected_label = tk.ttk.Label(automatic_tab, text="")
+
+    detected_label = ttk.Label(automatic_tab, text="")
     detected_label.pack(pady=20)
 
     # hotkeys_activation_var = tk.BooleanVar()
-    # hotkeys_activation_checkbox = tk.ttk.Checkbutton(manual_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+    # hotkeys_activation_checkbox = ttk.Checkbutton(manual_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
     # hotkeys_activation_checkbox.pack(pady=8)
 
     # hotkeys_activation_var = tk.BooleanVar()
-    # hotkeys_activation_checkbox = tk.ttk.Checkbutton(automatic_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
+    # hotkeys_activation_checkbox = ttk.Checkbutton(automatic_tab, text="Enable activation with hotkeys", variable=hotkeys_activation_var, command=hotkeys_activation_changed)
     # hotkeys_activation_checkbox.pack(pady=5)
 
     # mouse_mode_var = tk.BooleanVar()
-    # mouse_mode_checkbox = tk.ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
+    # mouse_mode_checkbox = ttk.Checkbutton(manual_tab, text="Mouse Mode", variable=mouse_mode_var)
     # mouse_mode_checkbox.pack()
 
-    global australia_mode_button
-    australia_mode_button = tk.ttk.Button(
+    australia_mode_button = ttk.Button(
         manual_tab,
         text="Australia Mode",
         command=activate_australia_mode,
@@ -777,7 +798,7 @@ def main():
     )
     australia_mode_button.pack(pady=(110, 20))
 
-    australia_mode_button = tk.ttk.Button(
+    australia_mode_button = ttk.Button(
         automatic_tab,
         text="Australia Mode",
         command=activate_australia_mode,
@@ -786,10 +807,10 @@ def main():
     )
     australia_mode_button.pack(pady=(110, 20))
 
-    style = tk.ttk.Style()
+    style = ttk.Style()
     style.configure("Big.TButton", font=button_font)
 
-    refresh_skin_button = tk.ttk.Button(
+    refresh_skin_button = ttk.Button(
         manual_tab,
         text="Refresh Skin in-game!",
         command=press_keys_with_keyboard_library,
@@ -800,58 +821,33 @@ def main():
 
     root.resizable(False, False)
 
-    global config
     if not (os.path.exists("./config.ini")):
         last_checked = "0"
         config = ConfigParser(allow_no_value=True, interpolation=None)
         config.optionxform = str
 
-        config.add_section('Settings')
-        config.set('Settings', 'LastUpdate', f'{last_checked}')
-        config.set('Settings', 'UpdateCheckInterval', '1')
+        config.add_section("Settings")
+        config.set("Settings", "LastUpdate", f"{last_checked}")
+        config.set("Settings", "UpdateCheckInterval", "1")
 
         with open("./config.ini", "w", encoding="utf8") as f:
             config.write(f)
-            
-        check_update(force=False)
+
+        check_for_updates(manual=False)
     else:
         config = ConfigParser(allow_no_value=True, interpolation=None)
         config.optionxform = str
         config.read("./config.ini")
-        
-        config_last_update = int(config['Settings']['LastUpdate'])
-        config_check_interval = int(config['Settings']['UpdateCheckInterval'])
+
+        config_last_update = int(config["Settings"]["LastUpdate"])
+        config_check_interval = int(config["Settings"]["UpdateCheckInterval"])
         last_checked = int(datetime.datetime.utcnow().timestamp())
 
-
-        if (last_checked - config_last_update > config_check_interval * 86400):  
-            check_update(force=False)
+        if last_checked - config_last_update > config_check_interval * 86400:
+            check_for_updates(manual=False)
             with open("./config.ini", "w", encoding="utf8") as f:
                 config.write(f)
-
 
     # yeah i know theres better ways to do all this but maybe will fix in the future im too lazy and too bad at coding zzzzzzzzzzzzz
     root.deiconify()
     root.mainloop()
-
-
-if __name__ == "__main__":
-    VERSION = "0.9.4 beta"  # Replace with your current app version
-
-    keyboard_controller = Controller()
-    detected_skin_path = ""
-    opentabletdriver_executables = [
-        "OpenTabletDriver.Daemon.exe",
-        "OpenTabletDriver.UX.Wpf.exe",
-    ]
-
-    running = True
-    is_australia_mode_active = False
-    hotkeys_enabled = False
-    display_count = 0
-
-    last_activation_time = 0
-    hotkey_thread = threading.Thread(target=setup_hotkeys, daemon=True)
-    hotkey_thread.start()
-
-    main()
