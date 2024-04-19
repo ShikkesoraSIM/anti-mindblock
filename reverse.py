@@ -663,7 +663,7 @@ def setup_hotkeys():
 
 
 if __name__ == "__main__":
-    VERSION = "0.9.4 beta"  # Replace with your current app version
+    VERSION = "0.9.4"  # Replace with your current app version
 
     keyboard_controller = Controller()
     detected_skin_path = ""
