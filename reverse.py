@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import webbrowser
 import win32api
 import win32con
@@ -287,7 +287,7 @@ def automatic_detection():
         print("osu! directory not found.")
 
 def select_osu_directory():
-    dir_path = tk.filedialog.askdirectory(title="Select osu! Directory")
+    dir_path = filedialog.askdirectory(title="Select osu! Directory")
     if not dir_path:
         return
     osu_directory_entry.delete(0, tk.END)
