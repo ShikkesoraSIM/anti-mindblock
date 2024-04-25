@@ -31,7 +31,7 @@ Watch the introduction and tutorial here: https://www.youtube.com/watch?v=ZVPWjg
 ⚠️ Please note that the software is not a virus but Windows falsely markes it as one, the code is open-source so no worries :)
 
 ## Socials
-<a href="https://discord.com/invite/CRHjTmJyMa"><img src="./assets/discord-mark-blue.png" alt="Discord Logo" width="60" height="46"></a>ㅤ<a href="https://www.youtube.com/@Shikkesora"><img src="./assets/youtube_social_icon_red.png" alt="YouTube Logo"></a>
+<a href="https://discord.com/invite/ydjdaZXGkx"><img src="./assets/discord-mark-blue.png" alt="Discord Logo" width="60" height="46"></a>ㅤ<a href="https://www.youtube.com/@Shikkesora"><img src="./assets/youtube_social_icon_red.png" alt="YouTube Logo"></a>
 ## Contributors
 [![](https://avatars.githubusercontent.com/u/148418529?size=50)](https://github.com/ShikkesoraSIM)
 [![](https://avatars.githubusercontent.com/u/75874561?size=50)](https://github.com/PatrickL546)
