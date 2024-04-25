@@ -2,15 +2,9 @@
   <a href="https://github.com/ShikkesoraSIM/anti-mindblock"> <img src="https://github.com/int80x0/anti-mindblock/blob/main/assets/logo%20with%20background%20no%20character.png?raw=true" alt="Project Logo" width="500" height="166">
   </a>
   <br />
-  <a href="https://github.com/ShikkesoraSIM/anti-mindblock/releases">
-    <img src="https://img.shields.io/github/downloads/ShikkesoraSIM/anti-mindblock/total" alt="GitHub Downloads"> 
-  </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/github/license/int80x0/anti-mindblock" alt="License"> 
-  </a>
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/language-Python-blue" alt="Language">
-  </a>
+  <img src="https://img.shields.io/github/downloads/ShikkesoraSIM/anti-mindblock/total" alt="GitHub Downloads"> 
+  <img href="https://opensource.org/licenses/MIT" src="https://img.shields.io/github/license/int80x0/anti-mindblock" alt="License"> 
+  <img src="https://img.shields.io/badge/language-Python-blue" alt="Language">
 </p>
 
 
