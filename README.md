@@ -19,7 +19,7 @@ This tool takes the hassle out of flipping your screen 180°, adjusting your ski
 
 Simplify the mental reset: take your osu! skills to new heights!
 
-# 🚀 Getting started
+## 🚀 Getting started
 Watch the inruduction and tutorial here: https://www.youtube.com/watch?v=ZVPWjgldezk
 <!--- Text guide in work but too much so no
 **Or** use this step-by-step Guide:
@@ -30,9 +30,9 @@ Watch the inruduction and tutorial here: https://www.youtube.com/watch?v=ZVPWjgl
 -->
 ⚠️ Please note that the software is not a virus but Windows falsely markes it as one, the code is open-source so no worries :)
 
-# Socials
+## Socials
 <a href="https://discord.com/invite/CRHjTmJyMa"><img src="https://github.com/int80x0/anti-mindblock/blob/main/assets/discord-mark-blue.png?raw=true" alt="Discord Logo" width="60" height="46"></a>ㅤ<a href="https://www.youtube.com/@Shikkesora"><img src="https://github.com/int80x0/anti-mindblock/blob/main/assets/youtube_social_icon_red.png?raw=true" alt="YouTube Logo"></a>
-# Contributors
+## Contributors
 [![](https://avatars.githubusercontent.com/u/148418529?size=50)](https://github.com/ShikkesoraSIM)
 [![](https://avatars.githubusercontent.com/u/75874561?size=50)](https://github.com/PatrickL546)
 [![](https://avatars.githubusercontent.com/u/144857142?size=50)](https://github.com/int80x0)
